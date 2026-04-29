@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -44,7 +43,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Usuario registrado exitosamente',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
         ], 201);
     }
 
@@ -60,9 +59,9 @@ class AuthController extends Controller
         ]);
 
         // Intento de autenticación
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'message' => 'Las credenciales proporcionadas son incorrectas.'
+                'message' => 'Las credenciales proporcionadas son incorrectas.',
             ], 401);
         }
 
@@ -75,7 +74,25 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Login exitoso',
             'user' => $user,
-            'token' => $token
+            'token' => $token,
+        ]);
+    }
+
+    /**
+     * Refrescar token de acceso
+     */
+    public function refresh(Request $request)
+    {
+        $user = $request->user();
+
+        $request->user()->currentAccessToken()->delete();
+
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Token refrescado exitosamente',
+            'token' => $token,
+            'token_type' => 'Bearer',
         ]);
     }
 
@@ -87,7 +104,7 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'message' => 'Sesión cerrada y token eliminado'
+            'message' => 'Sesión cerrada y token eliminado',
         ]);
     }
 }
